@@ -10,30 +10,31 @@
  * file that was distributed with this source code. For the full list of
  * contributors, visit https://github.com/PHPOffice/PHPWord/contributors.
  *
- * @see         https://github.com/PHPOffice/PHPWord
- * @copyright   2010-2018 PHPWord contributors
+ * @link        https://github.com/PHPOffice/PHPWord
+ * @copyright   2010-2016 PHPWord contributors
  * @license     http://www.gnu.org/licenses/lgpl.txt LGPL version 3
  */
 
 namespace PhpOffice\PhpWord\Shared;
+
+use PhpOffice\PhpWord\Exception\InvalidStyleException;
 
 /**
  * Common converter functions
  */
 class Converter
 {
-    const INCH_TO_CM = 2.54;
-    const INCH_TO_TWIP = 1440;
-    const INCH_TO_PIXEL = 96;
-    const INCH_TO_POINT = 72;
-    const INCH_TO_PICA = 6;
-    const PIXEL_TO_EMU = 9525;
-    const DEGREE_TO_ANGLE = 60000;
+    const INCH_TO_CM        = 2.54;
+    const INCH_TO_TWIP      = 1440;
+    const INCH_TO_PIXEL     = 96;
+    const INCH_TO_POINT     = 72;
+    const PIXEL_TO_EMU      = 9525;
+    const DEGREE_TO_ANGLE   = 60000;
 
     /**
      * Convert centimeter to twip
      *
-     * @param float $centimeter
+     * @param int $centimeter
      * @return float
      */
     public static function cmToTwip($centimeter = 1)
@@ -44,7 +45,7 @@ class Converter
     /**
      * Convert centimeter to inch
      *
-     * @param float $centimeter
+     * @param int $centimeter
      * @return float
      */
     public static function cmToInch($centimeter = 1)
@@ -55,7 +56,7 @@ class Converter
     /**
      * Convert centimeter to pixel
      *
-     * @param float $centimeter
+     * @param int $centimeter
      * @return float
      */
     public static function cmToPixel($centimeter = 1)
@@ -66,7 +67,7 @@ class Converter
     /**
      * Convert centimeter to point
      *
-     * @param float $centimeter
+     * @param int $centimeter
      * @return float
      */
     public static function cmToPoint($centimeter = 1)
@@ -77,8 +78,8 @@ class Converter
     /**
      * Convert centimeter to EMU
      *
-     * @param float $centimeter
-     * @return float
+     * @param int $centimeter
+     * @return int
      */
     public static function cmToEmu($centimeter = 1)
     {
@@ -88,8 +89,8 @@ class Converter
     /**
      * Convert inch to twip
      *
-     * @param float $inch
-     * @return float
+     * @param int $inch
+     * @return int
      */
     public static function inchToTwip($inch = 1)
     {
@@ -99,7 +100,7 @@ class Converter
     /**
      * Convert inch to centimeter
      *
-     * @param float $inch
+     * @param int $inch
      * @return float
      */
     public static function inchToCm($inch = 1)
@@ -110,8 +111,8 @@ class Converter
     /**
      * Convert inch to pixel
      *
-     * @param float $inch
-     * @return float
+     * @param int $inch
+     * @return int
      */
     public static function inchToPixel($inch = 1)
     {
@@ -121,8 +122,8 @@ class Converter
     /**
      * Convert inch to point
      *
-     * @param float $inch
-     * @return float
+     * @param int $inch
+     * @return int
      */
     public static function inchToPoint($inch = 1)
     {
@@ -132,8 +133,8 @@ class Converter
     /**
      * Convert inch to EMU
      *
-     * @param float $inch
-     * @return float
+     * @param int $inch
+     * @return int
      */
     public static function inchToEmu($inch = 1)
     {
@@ -144,7 +145,7 @@ class Converter
      * Convert pixel to twip
      *
      * @param int $pixel
-     * @return float
+     * @return int
      */
     public static function pixelToTwip($pixel = 1)
     {
@@ -188,7 +189,7 @@ class Converter
      * Convert point to twip unit
      *
      * @param int $point
-     * @return float
+     * @return int
      */
     public static function pointToTwip($point = 1)
     {
@@ -210,7 +211,7 @@ class Converter
      * Convert point to EMU
      *
      * @param int $point
-     * @return float
+     * @return int
      */
     public static function pointToEmu($point = 1)
     {
@@ -221,7 +222,7 @@ class Converter
      * Convert EMU to pixel
      *
      * @param int $emu
-     * @return float
+     * @return int
      */
     public static function emuToPixel($emu = 1)
     {
@@ -229,14 +230,118 @@ class Converter
     }
 
     /**
-     * Convert pica to point
+     * Convert an absolute CSS measurement to pixels
      *
-     * @param int $pica
+     * Units for absolute CSS measurements are cm, mm, in, px, pt and pc
+     *
+     * Note that the result will be rounded to the nearest pixel
+     *
+     * @param string $cssMeasurement If no measurement unit is included then cm
+     *                               is assumed
+     *
+     * @throws \PHPOffice\PhpWord\Exception\InvalidStyleException
+     *
      * @return float
      */
-    public static function picaToPoint($pica = 1)
+    public static function cssToPixel($cssMeasurement = '1cm')
     {
-        return $pica / self::INCH_TO_PICA * self::INCH_TO_POINT;
+        $units = trim(preg_replace('/^-?(?:\\d+\\.\\d+|\\.?\\d+)/', '', trim($cssMeasurement)));
+        $value = preg_replace('/\\D+$/', '', trim($cssMeasurement));
+        if ((strlen($value) > 0) && ($value[0] == '.')) {
+            $value = '0' . $value;
+        }
+        switch (strtolower($units)) {
+            case 'in':
+                $pixel = $value * static::INCH_TO_PIXEL;
+                break;
+            case 'cm':
+            case '':
+                $pixel = ($value / static::INCH_TO_CM) * static::INCH_TO_PIXEL;
+                break;
+            case 'mm':
+                $pixel = ($value / (10 * static::INCH_TO_CM)) * static::INCH_TO_PIXEL;
+                break;
+            case 'pt':
+                $pixel = ($value / static::INCH_TO_POINT) * static::INCH_TO_PIXEL;
+                break;
+            case 'pc':
+                $pixel = ($value / (12 * static::INCH_TO_POINT)) * static::INCH_TO_PIXEL;
+                break;
+            case 'px':
+                $pixel = floatval($value);
+                break;
+            default:
+                throw new InvalidStyleException($cssMeasurement . ' is an unsupported CSS measurement');
+        }
+        return $pixel;
+    }
+
+    /**
+     * Convert an absolute CSS measurement to EMU
+     *
+     * Units for absolute CSS measurements are cm, mm, in, px, pt and pc
+     *
+     * @param string $cssMeasurement If no measurement unit is included then cm
+     *                               is assumed
+     *
+     * @throws \PHPOffice\PhpWord\Exception\InvalidStyleException
+     *
+     * @return float
+     */
+    public static function cssToEmu($cssMeasurement = '1cm')
+    {
+        return static::cssToPixel($cssMeasurement) * static::PIXEL_TO_EMU;
+    }
+
+    /**
+     * Convert an absolute CSS measurement to point
+     *
+     * Units for absolute CSS measurements are cm, mm, in, px, pt and pc
+     *
+     * @param string $cssMeasurement If no measurement unit is included then cm
+     *                               is assumed
+     *
+     * @throws \PHPOffice\PhpWord\Exception\InvalidStyleException
+     *
+     * @return float
+     */
+    public static function cssToPoint($cssMeasurement = '1cm')
+    {
+        return static::cssToPixel($cssMeasurement) * static::INCH_TO_POINT / static::INCH_TO_PIXEL;
+    }
+
+    /**
+     * Convert an absolute CSS measurement to twip
+     *
+     * Units for absolute CSS measurements are cm, mm, in, px, pt and pc
+     *
+     * @param string $cssMeasurement If no measurement unit is included then cm
+     *                               is assumed
+     *
+     * @throws \PHPOffice\PhpWord\Exception\InvalidStyleException
+     *
+     * @return float
+     */
+    public static function cssToTwip($cssMeasurement = '1cm')
+    {
+        return static::cssToPixel($cssMeasurement) * static::INCH_TO_TWIP / static::INCH_TO_PIXEL;
+    }
+
+    /**
+     * Convert an absolute CSS measurement to centimeter
+     *
+     * Units for absolute CSS measurements are cm, mm, in, px, pt and pc
+     *
+     * @param string $cssMeasurement If no measurement unit is included then cm
+     *                               is assumed
+     *
+     * @throws \PHPOffice\PhpWord\Exception\InvalidStyleException
+     *
+     * @return float
+     */
+    public static function cssToCm($cssMeasurement = '1cm')
+    {
+        return static::cssToPixel($cssMeasurement) * static::INCH_TO_CM / static::INCH_TO_PIXEL;
     }
 
     /**
@@ -247,7 +352,7 @@ class Converter
      */
     public static function degreeToAngle($degree = 1)
     {
-        return (int) round($degree * self::DEGREE_TO_ANGLE);
+        return (int)round($degree * self::DEGREE_TO_ANGLE);
     }
 
     /**
@@ -286,50 +391,5 @@ class Converter
         $blue = hexdec($blue);
 
         return array($red, $green, $blue);
-    }
-
-    /**
-     * Transforms a size in CSS format (eg. 10px, 10px, ...) to points
-     *
-     * @param string $value
-     * @return float
-     */
-    public static function cssToPoint($value)
-    {
-        if ($value == '0') {
-            return 0;
-        }
-        if (preg_match('/^[+-]?([0-9]+\.?[0-9]*)?(px|em|ex|%|in|cm|mm|pt|pc)$/i', $value, $matches)) {
-            $size = $matches[1];
-            $unit = $matches[2];
-
-            switch ($unit) {
-                case 'pt':
-                    return $size;
-                case 'px':
-                    return self::pixelToPoint($size);
-                case 'cm':
-                    return self::cmToPoint($size);
-                case 'mm':
-                    return self::cmToPoint($size / 10);
-                case 'in':
-                    return self::inchToPoint($size);
-                case 'pc':
-                    return self::picaToPoint($size);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Transforms a size in CSS format (eg. 10px, 10px, ...) to twips
-     *
-     * @param string $value
-     * @return float
-     */
-    public static function cssToTwip($value)
-    {
-        return self::pointToTwip(self::cssToPoint($value));
     }
 }
